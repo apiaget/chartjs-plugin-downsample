@@ -58,7 +58,7 @@ function downsample(data, threshold) {
         var avgRangeLength = avgRangeEnd - avgRangeStart;
 
         for (; avgRangeStart < avgRangeEnd; avgRangeStart++) {
-            avgX += data[avgRangeStart].x * 1; // * 1 enforces Number (value may be Date)
+            avgX += new Date(data[avgRangeStart].t).getTime() * 1; // * 1 enforces Number (value may be Date)
             avgY += data[avgRangeStart].y * 1;
         }
         avgX /= avgRangeLength;
@@ -69,7 +69,7 @@ function downsample(data, threshold) {
             rangeTo = floor((i + 1) * every) + 1;
 
         // Point a
-        var pointAX = data[a].x * 1, // enforce Number (value may be Date)
+        var pointAX = new Date(data[a].t).getTime() * 1, // enforce Number (value may be Date)
             pointAY = data[a].y * 1;
 
         maxArea = area = -1;
@@ -77,7 +77,7 @@ function downsample(data, threshold) {
         for (; rangeOffs < rangeTo; rangeOffs++) {
             // Calculate triangle area over three buckets
             area = abs(( pointAX - avgX ) * ( data[rangeOffs].y - pointAY ) -
-                    ( pointAX - data[rangeOffs].x ) * ( avgY - pointAY )
+                    ( pointAX - new Date(data[rangeOffs].t).getTime() ) * ( avgY - pointAY )
                 ) * 0.5;
             if (area > maxArea) {
                 maxArea = area;

@@ -135,11 +135,21 @@ function downsampleChart(chartInstance) {
             }
 
             var timestamp = 0;
+            var previous = null;
+            var next = null;
             for(var j = 0; j < dataset.originalData.length; j++) {
                 timestamp = new Date(dataset.originalData[j].t).getTime();
 
                 if(timestamp >= min && timestamp <= max) {
+                    if(previous === null && j > 0) {
+                        previous = dataset.originalData[j-1];
+                        dataToDownsample.push(previous);
+                    }
                     dataToDownsample.push(dataset.originalData[j]);
+                }
+                if(timestamp > min && timestamp > max && next === null && j <  (dataset.originalData.length - 1)) {
+                    next = dataset.originalData[j+1];
+                    dataToDownsample.push(next);    
                 }
             }
         }

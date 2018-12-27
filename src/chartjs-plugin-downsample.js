@@ -28,6 +28,7 @@ function downsample(data, threshold) {
     // this function is from flot-downsample (MIT), with modifications
 
     var dataLength = data.length;
+
     if (threshold >= dataLength || threshold <= 0) {
         return data; // nothing to do
     }
@@ -105,24 +106,51 @@ function downsampleChart(chartInstance) {
     if(!options.enabled) return;
 
     var datasets = chartInstance.data.datasets;
+    if(chartInstance.scales === undefined) return;
+    
+    
+    var min = chartInstance.scales['x-axis-0'].min;
+    var min2 = chartInstance.config.options.scales.xAxes[0].time.min;
+    var max = chartInstance.scales['x-axis-0'].max;
+    var max2 = chartInstance.config.options.scales.xAxes[0].time.max;
+
     for(var i = 0; i < datasets.length; i++) {
         var dataset = datasets[i];
 
-        var dataToDownsample = null;
-        if(options.preferOriginalData) {
-            dataToDownsample = dataset.originalData;
-        }
-        dataToDownsample = dataToDownsample || dataset.data;
+        var dataToDownsample = [];
 
-        dataset.originalData = dataToDownsample;
-        dataset.data = downsample(dataToDownsample, threshold);
+        if(dataset.originalData === undefined || dataset.originalData === null)
+            dataset.originalData = dataset.data;
+
+        if(max-min === 86400000 || (min2 === undefined || max2 === undefined)) {
+            dataToDownsample = dataset.originalData
+        } else if (min2 !== undefined && max2 !== undefined && min2 === "" && max2 === "") { //reset
+            dataToDownsample = dataset.originalData
+        } else {
+            if(min2 !== undefined && max2 !== undefined && min2 !== "" && max2 !== "") {
+                min2 = new Date(min2).getTime();
+                min = min2;
+                max2 = new Date(max2).getTime();
+                max = max2;
+            }
+
+            var timestamp = 0;
+            for(var j = 0; j < dataset.originalData.length; j++) {
+                timestamp = new Date(dataset.originalData[j].t).getTime();
+
+                if(timestamp >= min && timestamp <= max) {
+                    dataToDownsample.push(dataset.originalData[j]);
+                }
+            }
+        }
+
+        chartInstance.data.datasets[i].data = downsample(dataToDownsample, threshold);
     }
 }
 
 var downsamplePlugin = {
     beforeInit: function (chartInstance) {
         var options = chartInstance.options.downsample = helpers.extend({}, defaultOptions, chartInstance.options.downsample || {});
-
         if(options.onInit) {
             downsampleChart(chartInstance);
         }
@@ -137,23 +165,32 @@ var downsamplePlugin = {
         }
     },
 
-    beforeDatasetsUpdate: function(chartInstance) {
+    beforeUpdate: function(chartInstance) {
         if(chartInstance.options.downsample.auto) {
             downsampleChart(chartInstance);
         }
     },
 
+    /*beforeDatasetsUpdate: function(chartInstance) {
+        if(chartInstance.options.downsample.auto) {
+            console.log("beforeDatasetsUpdate");
+            downsampleChart(chartInstance);
+        }
+    },*/
+    
     afterDatasetsUpdate: function(chartInstance) {
-        var options = getOptions(chartInstance);
+        /*var options = getOptions(chartInstance);
         if(!options.enabled || !options.restoreOriginalData) return;
-
+        
         var datasets = chartInstance.data.datasets;
         for(var i = 0; i < datasets.length; i++) {
-            var dataset = datasets[i];
+            //console.log("afterDatasetsUpdate");
+            //var dataset = datasets[i];
+            //console.log(dataset.originalData || dataset.data);
 
-            dataset.data = dataset.originalData || dataset.data;
-            dataset.originalData = null;
-        }
+            //dataset.data = dataset.data;
+            //dataset.originalData = null;
+        }*/
     }
 };
 
